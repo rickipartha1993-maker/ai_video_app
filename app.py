@@ -3,6 +3,7 @@ import streamlit as st
 import requests
 from streamlit_lottie import st_lottie
 import os
+import subprocess
 from yt_dlp import YoutubeDL
 from moviepy.editor import VideoFileClip, ImageClip, CompositeVideoClip
 from PIL import Image
@@ -80,7 +81,7 @@ def main_app():
     # 1. Video Link Input
     video_url = st.text_input("Enter YouTube Video Link:")
     
-    # 2. Platform & Resolution Selection (Feature requested)
+    # 2. Platform & Resolution Selection
     st.markdown("### 📱 Select Target Platform & Size")
     platform = st.selectbox(
         "Choose where you want to upload:",
@@ -91,45 +92,75 @@ def main_app():
         ]
     )
     
-    # 3. Custom Image/Logo Overlay Feature (Feature requested)
+    # 3. Custom Image/Logo Overlay Feature
     st.markdown("### 🖼️ Custom Overlay Image / Logo")
     uploaded_image = st.file_uploader("Upload your image or logo to overlay on video (PNG/JPG)", type=["png", "jpg", "jpeg"])
     
     if st.button("Process & Generate Video"):
         if video_url:
-            with st.spinner("Processing video... Please wait."):
+            with st.spinner("Updating yt-dlp and downloading video... Please wait."):
                 try:
-                    # Download video via yt-dlp
+                    # Auto-upgrade yt-dlp to fix 403 Forbidden errors
+                    subprocess.run(["pip", "install", "--upgrade", "yt-dlp"], check=False)
+
                     ydl_opts = {
-                        'format': 'mp4/best',
+                        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
                         'outtmpl': 'downloaded_video.mp4',
+                        'geo_bypass': True,
                     }
+                    
                     if os.path.exists("downloaded_video.mp4"):
                         os.remove("downloaded_video.mp4")
                         
                     with YoutubeDL(ydl_opts) as ydl:
                         ydl.download([video_url])
                         
+                    st.success("Video downloaded successfully. Processing formatting & overlay...")
+                    
+                    # Load video via MoviePy
+                    clip = VideoFileClip("downloaded_video.mp4")
+                    
+                    # Resize/Crop based on selected platform
+                    w, h = clip.size
+                    if "9:16" in platform:
+                        # Crop center for vertical shorts
+                        target_w = int(h * (9 / 16))
+                        if target_w < w:
+                            x_center = w / 2
+                            clip = clip.crop(x1=x_center - target_w/2, y1=0, x2=x_center + target_w/2, y2=h)
+                        clip = clip.resize(height=1920)
+                    elif "1:1" in platform:
+                        # Square crop
+                        min_dim = min(w, h)
+                        clip = clip.crop(x1=(w - min_dim)/2, y1=(h - min_dim)/2, x2=(w + min_dim)/2, y2=(h + min_dim)/2)
+                        clip = clip.resize(width=1080)
+                    else:
+                        # 16:9 standard
+                        clip = clip.resize(width=1920)
+
                     # Handle Custom Image Overlay if uploaded
                     if uploaded_image is not None:
                         img_path = "user_overlay_img.png"
                         with open(img_path, "wb") as f:
                             f.write(uploaded_image.getbuffer())
                         
-                        # Process with MoviePy
-                        clip = VideoFileClip("downloaded_video.mp4")
-                        logo = ImageClip(img_path).set_duration(clip.duration).resize(height=100).set_position(("right", "top"))
+                        logo = ImageClip(img_path).set_duration(clip.duration).resize(height=120).set_position(("right", "top"))
                         final_clip = CompositeVideoClip([clip, logo])
-                        final_clip.write_videofile("final_output.mp4", codec="libx264", audio_codec="aac")
-                        
-                        st.success("Video processed successfully with your custom logo/image!")
-                        st.video("final_output.mp4")
                     else:
-                        st.success("Video downloaded successfully!")
-                        st.video("downloaded_video.mp4")
+                        final_clip = clip
+
+                    # Export output video
+                    output_file = "final_output.mp4"
+                    if os.path.exists(output_file):
+                        os.remove(output_file)
+                        
+                    final_clip.write_videofile(output_file, codec="libx264", audio_codec="aac", fps=24, preset="fast")
+                    
+                    st.success("Video processed and formatted successfully!")
+                    st.video(output_file)
                         
                 except Exception as e:
-                    st.error(f"An error occurred: {e}")
+                    st.error(f"An error occurred during processing: {e}")
         else:
             st.error("Please provide a valid video link.")
 
