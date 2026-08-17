@@ -1,5 +1,4 @@
 
-
 import os
 import streamlit as st
 from moviepy.editor import VideoFileClip
@@ -25,13 +24,28 @@ st.sidebar.title("🛠️ Developer Panel")
 dev_mode = st.sidebar.checkbox("আমি অ্যাপ ডেভেলপার (Free & Unlimited Access)")
 
 if dev_mode:
-    # আপনার সেট করা নতুন পাসওয়ার্ড এখানে বসানো হয়েছে
     dev_pass = st.sidebar.text_input("ডেভেলপার পাসওয়ার্ড দিন:", type="password")
     if dev_pass == "NI19la93@18":
         st.sidebar.success("অ্যাডমিন এক্সেস সফল! আপনার কোনো সাবস্ক্রিপশন লাগবে না।")
         st.session_state.is_subscribed = True
     elif dev_pass != "":
         st.sidebar.error("ভুল পাসওয়ার্ড!")
+
+# ==========================================
+# 📤 অ্যাপ শেয়ারিং ইন্টারফেস (Sidebar Share Section)
+# ==========================================
+st.sidebar.markdown("---")
+st.sidebar.title("📤 Share This App")
+st.sidebar.write("আপনার বন্ধু বা পরিচিতদের সাথে অ্যাপটি শেয়ার করুন:")
+
+# বর্তমান অ্যাপের ওয়েব লিংক অটো ডিটেক্ট বা শেয়ার টেক্সট তৈরি
+app_share_text = "🔥 অসাধারণ একটি ভিডিও শর্ট জেনারেটর অ্যাপ! এই লিংকে ক্লিক করে যেকোনো লং ভিডিও থেকে শর্ট ক্লিপ তৈরি করুন এবং ওয়াটারমার্ক রিমুভ করুন: "
+whatsapp_url = f"https://api.whatsapp.com/send?text={app_share_text}"
+
+st.sidebar.markdown(
+    f'<a href="{whatsapp_url}" target="_blank"><button style="background-color:#25D366; color:white; border:none; padding:10px 15px; border-radius:5px; cursor:pointer; width:100%; font-weight:bold;">📲 WhatsApp এ শেয়ার করুন</button></a>',
+    unsafe_allow_html=True
+)
 
 FREE_LIMIT = 2
 
@@ -117,7 +131,6 @@ if st.button("ভিডিও জেনারেট ও প্রসেস ক�
             st.markdown(f"**📝 ডেসক্রিপশন:**")
             st.code(gen_description, language="text")
             
-            # যদি ডেভেলপার মোড অন না থাকে তবেই কেবল ফ্রি কাউন্ট বাড়বে
             if not dev_mode:
                 st.session_state.video_count += 1
             
@@ -125,5 +138,4 @@ if st.button("ভিডিও জেনারেট ও প্রসেস ক�
             st.error(f"একটি ত্রুটি ঘটেছে: {e}")
     else:
         st.error("দয়া করে একটি সঠিক ভিডিওর লিংক দিন!")
-
 
