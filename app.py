@@ -3,14 +3,15 @@ import os
 import streamlit as st
 from moviepy.editor import VideoFileClip
 import yt_dlp
+import urllib.parse
 
 # Page configuration
 st.set_page_config(page_title="Video Short & Metadata Generator", page_icon="🎥", layout="centered")
 
 st.title("🎥 Video Short Generator & Auto Metadata")
-st.write("যে কোনো লং ভিডিওর লিংক দিন, শর্ট ক্লিপ তৈরি করুন, ওয়াটারমার্ক রিমুভ করুন এবং অটো টাইটেল-ডেসক্রিপশন পান!")
+st.write("Paste any long video link, create short clips, remove watermarks, and get auto-generated titles and descriptions!")
 
-# সেশন স্টেট (Session State) ট্র্যাকিং
+# Session state tracking
 if 'video_count' not in st.session_state:
     st.session_state.video_count = 0
 
@@ -18,75 +19,77 @@ if 'is_subscribed' not in st.session_state:
     st.session_state.is_subscribed = False
 
 # ==========================================
-# 👑 ডেভেলপার বাইপাস / অ্যাডমিন সেকশন
+# 👑 Developer Bypass / Admin Section
 # ==========================================
 st.sidebar.title("🛠️ Developer Panel")
-dev_mode = st.sidebar.checkbox("আমি অ্যাপ ডেভেলপার (Free & Unlimited Access)")
+dev_mode = st.sidebar.checkbox("I am the App Developer (Free & Unlimited Access)")
 
 if dev_mode:
-    dev_pass = st.sidebar.text_input("ডেভেলপার পাসওয়ার্ড দিন:", type="password")
+    dev_pass = st.sidebar.text_input("Enter Developer Password:", type="password")
     if dev_pass == "NI19la93@18":
-        st.sidebar.success("অ্যাডমিন এক্সেস সফল! আপনার কোনো সাবস্ক্রিপশন লাগবে না।")
+        st.sidebar.success("Admin access granted! No subscription needed.")
         st.session_state.is_subscribed = True
     elif dev_pass != "":
-        st.sidebar.error("ভুল পাসওয়ার্ড!")
+        st.sidebar.error("Incorrect password!")
 
 # ==========================================
-# 📤 অ্যাপ শেয়ারিং ইন্টারফেস (Sidebar Share Section)
+# 📤 App Sharing Interface (Sidebar Share Section)
 # ==========================================
 st.sidebar.markdown("---")
 st.sidebar.title("📤 Share This App")
-st.sidebar.write("আপনার বন্ধু বা পরিচিতদের সাথে অ্যাপটি শেয়ার করুন:")
+st.sidebar.write("Share this amazing app with your friends and colleagues:")
 
-# বর্তমান অ্যাপের ওয়েব লিংক অটো ডিটেক্ট বা শেয়ার টেক্সট তৈরি
-app_share_text = "🔥 অসাধারণ একটি ভিডিও শর্ট জেনারেটর অ্যাপ! এই লিংকে ক্লিক করে যেকোনো লং ভিডিও থেকে শর্ট ক্লিপ তৈরি করুন এবং ওয়াটারমার্ক রিমুভ করুন: "
-whatsapp_url = f"https://api.whatsapp.com/send?text={app_share_text}"
+# Replace with your actual live Streamlit app URL if needed
+app_link = "https://alvideoapp-8joyèykrvfdutpuacjok9p.streamlit.app"
+share_message = f"🔥 Check out this awesome Video Short Generator app! Create clips and remove watermarks instantly: {app_link}"
+encoded_message = urllib.parse.quote(share_message)
+whatsapp_url = f"https://api.whatsapp.com/send?text={encoded_message}"
 
 st.sidebar.markdown(
-    f'<a href="{whatsapp_url}" target="_blank"><button style="background-color:#25D366; color:white; border:none; padding:10px 15px; border-radius:5px; cursor:pointer; width:100%; font-weight:bold;">📲 WhatsApp এ শেয়ার করুন</button></a>',
+    f'<a href="{whatsapp_url}" target="_blank"><button style="background-color:#25D366; color:white; border:none; padding:10px 15px; border-radius:5px; cursor:pointer; width:100%; font-weight:bold;">📲 Share on WhatsApp</button></a>',
     unsafe_allow_html=True
 )
 
 FREE_LIMIT = 2
 
-# যদি ফ্রি লিমিট শেষ হয়ে যায় এবং ডেভেলপার বা সাবস্ক্রাইব করা না থাকে, তবে সাবস্ক্রিপশন পেজ দেখাবে
+# Freemium Limit Check
 if st.session_state.video_count >= FREE_LIMIT and not st.session_state.is_subscribed:
-    st.warning("⚠️ আপনার ফ্রি ট্রায়াল লিমিট (২টি ভিডিও) শেষ হয়ে গেছে! অ্যাপটি தொடர்ந்து ব্যবহার করতে একটি প্ল্যান বেছে নিন বা সাইডবার থেকে ডেভেলপার মোড অন করুন।")
+    st.warning("⚠️ Your free trial limit (2 videos) has been reached! Choose a subscription plan below or enable developer mode from the sidebar to continue.")
     
     st.markdown("---")
-    st.subheader("💎 প্রিমিয়াম সাবস্ক্রিপশন প্ল্যানসমূহ")
-    st.write("সাধারণ ব্যবহারকারীদের জন্য প্ল্যানসমূহ:")
+    st.subheader("💎 Premium Subscription Plans")
+    st.write("Choose a plan for regular usage:")
 
     plan_choice = st.radio(
-        "সাবস্ক্রিপশন প্ল্যান বেছে নিন:",
+        "Select your plan:",
         (
-            "ডেইলি পাস (Daily Pass) - ₹১৯ / দিন",
-            "মাসিক প্রো (Monthly Pro) - ₹২৯৯ / মাস",
-            "বার্ষিক মেগা (Yearly Mega) - ₹১,৯৯৯ / বছর"
+            "Daily Pass - ₹19 / Day",
+            "Monthly Pro - ₹299 / Month",
+            "Yearly Mega - ₹1,999 / Year"
         )
     )
 
     st.markdown("---")
-    st.write("### 💳 পেমেন্ট অপশন (UPI / PayTM / BharatPe / Razorpay)")
+    st.write("### 💳 Payment Options (UPI / PayTM / BharatPe / Razorpay)")
     payment_method = st.selectbox(
-        "পেমেন্ট মাধ্যম বেছে নিন:",
+        "Select payment method:",
         ["UPI (Google Pay / PhonePe / Paytm)", "Paytm Wallet", "BharatPe QR / Net Banking", "Credit / Debit Card (Razorpay)"]
     )
 
-    if st.button("পেমেন্ট সম্পন্ন করুন ও সাবস্ক্রাইব করুন"):
+    if st.button("Complete Payment & Subscribe"):
         st.session_state.is_subscribed = True
-        st.success(f"ধন্যবাদ! আপনি সফলভাবে '{plan_choice}' সাবস্ক্রাইব করেছেন।")
+        st.success(f"Thank you! You have successfully subscribed to the '{plan_choice}'.")
         st.rerun()
         
     st.stop()
 
-# ভিডিও লিংক ইনপুট নেওয়ার অপশন
-video_url = st.text_input("ভিডিওর লিংক দিন (যেমন: YouTube Link):", placeholder="https://www.youtube.com/watch?v=...")
+# Video Link Input
+video_url = st.text_input("Enter Video Link (e.g., YouTube Link):", placeholder="https://www.youtube.com/watch?v=...")
 
-if st.button("ভিডিও জেনারেট ও প্রসেস করুন"):
+if st.button("Generate & Process Video"):
     if video_url:
         try:
-            st.info("লিংক থেকে ভিডিও ডাউনলোড এবং প্রসেসিং শুরু হয়েছে...")
+            st.info("Downloading and processing video from the link...")
             
             ydl_opts = {
                 'format': 'bestvideo[height<=1080]+bestaudio/best[height<=1080]',
@@ -99,7 +102,7 @@ if st.button("ভিডিও জেনারেট ও প্রসেস ক�
                 info_dict = ydl.extract_info(video_url, download=True)
                 video_title = info_dict.get('title', 'YouTube Short')
                 
-            st.success("ভিডিও সফলভাবে ডাউনলোড হয়েছে!")
+            st.success("Video downloaded successfully!")
             
             video_path = "downloaded_video.mp4"
             clip = VideoFileClip(video_path)
@@ -119,23 +122,23 @@ if st.button("ভিডিও জেনারেট ও প্রসেস ক�
             )
             
             st.video(output_path)
-            st.success("ওয়াটারমার্ক রিমুভ করে শর্ট ভিডিও তৈরি সফল!")
+            st.success("Short video created successfully with watermark removed!")
             
-            st.subheader("🤖 অটো জেনারেটেড মেটাডেটা (টাইটেল ও ডেসক্রিপশন)")
+            st.subheader("🤖 Auto-Generated Metadata (Title & Description)")
             gen_title = f"🔥 {video_title[:50]}... #Shorts #Viral"
             gen_description = f"Watch this amazing moment from the video! Don't forget to like, share and subscribe for more shorts.\n\nOriginal Source: {video_url}\n\n#Shorts #Trending #YouTubeShorts #ViralVideo"
             
-            st.markdown(f"**📌 টাইটেল:**")
+            st.markdown(f"**📌 Title:**")
             st.code(gen_title, language="text")
             
-            st.markdown(f"**📝 ডেসক্রিপশন:**")
+            st.markdown(f"**📝 Description:**")
             st.code(gen_description, language="text")
             
             if not dev_mode:
                 st.session_state.video_count += 1
             
         except Exception as e:
-            st.error(f"একটি ত্রুটি ঘটেছে: {e}")
+            st.error(f"An error occurred: {e}")
     else:
-        st.error("দয়া করে একটি সঠিক ভিডিওর লিংক দিন!")
+        st.error("Please enter a valid video link!")
 
