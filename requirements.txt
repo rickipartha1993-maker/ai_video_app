@@ -4,3 +4,4 @@ google-generativeai
 moviepy==1.0.3
 yt-dlp
 pillow 
+streamlit-lottie
