@@ -3,13 +3,28 @@ import streamlit as st
 import requests
 from streamlit_lottie import st_lottie
 import os
-import subprocess
 from yt_dlp import YoutubeDL
 from moviepy.editor import VideoFileClip, ImageClip, CompositeVideoClip
 from PIL import Image
 
-# Page Config
-st.set_page_config(page_title="Video Short Generator", page_icon="🎬", layout="centered")
+# Page Config & Hide Streamlit Default Menu/Footer for Security
+st.set_page_config(
+    page_title="Video Short Generator", 
+    page_icon="🎬", 
+    layout="centered",
+    initial_sidebar_state="expanded"
+)
+
+# Hide Streamlit "Manage app", Footer, and Hamburger Menu to secure code
+hide_streamlit_style = """
+<style>
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+.stDeployButton {display:none;}
+header {visibility: hidden;}
+</style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 # Initialize Session State
 if "authenticated" not in st.session_state: 
@@ -35,7 +50,7 @@ lottie_json = load_lottieurl(lottie_url)
 st.sidebar.subheader("Developer Access")
 is_dev = st.sidebar.checkbox("I am a Developer")
 if is_dev:
-    dev_pass = st.sidebar.text_input("Enter Dev Password:", type="password")
+    dev_pass = st.sidebar.text_input("Enter Dev Password:", type="password", key="dev_pass_input")
     if dev_pass == "NI19la93@18":
         st.session_state.dev_mode = True
         st.session_state.authenticated = True
@@ -98,15 +113,15 @@ def main_app():
     
     if st.button("Process & Generate Video"):
         if video_url:
-            with st.spinner("Updating yt-dlp and downloading video... Please wait."):
+            with st.spinner("Bypassing restrictions and downloading video... Please wait."):
                 try:
-                    # Auto-upgrade yt-dlp to fix 403 Forbidden errors
-                    subprocess.run(["pip", "install", "--upgrade", "yt-dlp"], check=False)
-
                     ydl_opts = {
-                        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+                        'format': 'best[ext=mp4]/best',
                         'outtmpl': 'downloaded_video.mp4',
                         'geo_bypass': True,
+                        'nocheckcertificate': True,
+                        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
                     }
                     
                     if os.path.exists("downloaded_video.mp4"):
@@ -115,30 +130,24 @@ def main_app():
                     with YoutubeDL(ydl_opts) as ydl:
                         ydl.download([video_url])
                         
-                    st.success("Video downloaded successfully. Processing formatting & overlay...")
+                    st.success("Video downloaded successfully. Applying formatting & overlay...")
                     
-                    # Load video via MoviePy
                     clip = VideoFileClip("downloaded_video.mp4")
                     
-                    # Resize/Crop based on selected platform
                     w, h = clip.size
                     if "9:16" in platform:
-                        # Crop center for vertical shorts
                         target_w = int(h * (9 / 16))
                         if target_w < w:
                             x_center = w / 2
                             clip = clip.crop(x1=x_center - target_w/2, y1=0, x2=x_center + target_w/2, y2=h)
                         clip = clip.resize(height=1920)
                     elif "1:1" in platform:
-                        # Square crop
                         min_dim = min(w, h)
                         clip = clip.crop(x1=(w - min_dim)/2, y1=(h - min_dim)/2, x2=(w + min_dim)/2, y2=(h + min_dim)/2)
                         clip = clip.resize(width=1080)
                     else:
-                        # 16:9 standard
                         clip = clip.resize(width=1920)
 
-                    # Handle Custom Image Overlay if uploaded
                     if uploaded_image is not None:
                         img_path = "user_overlay_img.png"
                         with open(img_path, "wb") as f:
@@ -149,7 +158,6 @@ def main_app():
                     else:
                         final_clip = clip
 
-                    # Export output video
                     output_file = "final_output.mp4"
                     if os.path.exists(output_file):
                         os.remove(output_file)
