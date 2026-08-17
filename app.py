@@ -2,6 +2,10 @@
 import streamlit as st
 import requests
 from streamlit_lottie import st_lottie
+import os
+from yt_dlp import YoutubeDL
+from moviepy.editor import VideoFileClip, ImageClip, CompositeVideoClip
+from PIL import Image
 
 # Page Config
 st.set_page_config(page_title="Video Short Generator", page_icon="🎬", layout="centered")
@@ -71,15 +75,63 @@ def main_app():
             st.rerun()
 
     st.title("🎬 Dashboard - Video Generator")
-    st.write("Welcome to the main tool! You have successfully accessed the application.")
+    st.write("Configure your target platform, upload custom graphics, and process your video.")
     
-    # Your video processing and editing tools will go here
-    video_url = st.text_input("Enter Video Link:")
-    if st.button("Process Video"):
+    # 1. Video Link Input
+    video_url = st.text_input("Enter YouTube Video Link:")
+    
+    # 2. Platform & Resolution Selection (Feature requested)
+    st.markdown("### 📱 Select Target Platform & Size")
+    platform = st.selectbox(
+        "Choose where you want to upload:",
+        [
+            "YouTube Shorts / TikTok / Instagram Reels (9:16 - 1080x1920)",
+            "Facebook Feed / Standard Video (16:9 - 1920x1080)",
+            "Instagram Square Post (1:1 - 1080x1080)"
+        ]
+    )
+    
+    # 3. Custom Image/Logo Overlay Feature (Feature requested)
+    st.markdown("### 🖼️ Custom Overlay Image / Logo")
+    uploaded_image = st.file_uploader("Upload your image or logo to overlay on video (PNG/JPG)", type=["png", "jpg", "jpeg"])
+    
+    if st.button("Process & Generate Video"):
         if video_url:
-            st.success("Video processing simulation started successfully!")
+            with st.spinner("Processing video... Please wait."):
+                try:
+                    # Download video via yt-dlp
+                    ydl_opts = {
+                        'format': 'mp4/best',
+                        'outtmpl': 'downloaded_video.mp4',
+                    }
+                    if os.path.exists("downloaded_video.mp4"):
+                        os.remove("downloaded_video.mp4")
+                        
+                    with YoutubeDL(ydl_opts) as ydl:
+                        ydl.download([video_url])
+                        
+                    # Handle Custom Image Overlay if uploaded
+                    if uploaded_image is not None:
+                        img_path = "user_overlay_img.png"
+                        with open(img_path, "wb") as f:
+                            f.write(uploaded_image.getbuffer())
+                        
+                        # Process with MoviePy
+                        clip = VideoFileClip("downloaded_video.mp4")
+                        logo = ImageClip(img_path).set_duration(clip.duration).resize(height=100).set_position(("right", "top"))
+                        final_clip = CompositeVideoClip([clip, logo])
+                        final_clip.write_videofile("final_output.mp4", codec="libx264", audio_codec="aac")
+                        
+                        st.success("Video processed successfully with your custom logo/image!")
+                        st.video("final_output.mp4")
+                    else:
+                        st.success("Video downloaded successfully!")
+                        st.video("downloaded_video.mp4")
+                        
+                except Exception as e:
+                    st.error(f"An error occurred: {e}")
         else:
-            st.error("Please provide a video link.")
+            st.error("Please provide a valid video link.")
 
 # ----------------- ROUTING FLOW -----------------
 if not st.session_state.authenticated:
