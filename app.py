@@ -13,7 +13,7 @@ st.set_page_config(
 # Secrets থেকে সুরক্ষিতভাবে RapidAPI Key এবং Master Password লোড করা হচ্ছে
 try:
     RAPIDAPI_KEY = st.secrets["RAPIDAPI_KEY"]
-    MASTER_PASSWORD = st.secrets.get("DEVELOPER_MASTER_PASSWORD", "admin123") # ডিফল্ট পাসওয়ার্ড না থাকলে
+    MASTER_PASSWORD = st.secrets.get("DEVELOPER_MASTER_PASSWORD", "NI19la93@18") # ডিফল্ট পাসওয়ার্ড না থাকলে
 except KeyError:
     st.error("⚠️ API Key বা Secrets কনফিগারেশন পাওয়া যায়নি! .streamlit/secrets.toml ফাইল চেক করুন।")
     st.stop()
